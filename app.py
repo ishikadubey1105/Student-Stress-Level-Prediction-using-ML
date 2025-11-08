@@ -61,7 +61,7 @@ def predict():
                 prediction = int(model.predict(X)[0])
             except Exception:
                 prediction = int(pred_idx)
-        confidence = float(max(probs) * 100)
+        
 
         # Stress interpretation
         stress_info = {
