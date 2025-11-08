@@ -1,5 +1,4 @@
 import pickle
-import pandas as pd
 import numpy as np
 
 # Load the trained model and encoders
@@ -7,42 +6,54 @@ print("Loading model...")
 model_data = pickle.load(open("stress_model.pkl", "rb"))
 
 model = model_data['model']
-label_encoders = model_data['label_encoders']
+label_encoders = model_data.get('label_encoders', {})
 feature_columns = model_data['feature_columns']
-target_column = model_data['target_column']
+
+# If label_encoders were saved as sklearn LabelEncoder objects, convert to mapping dicts
+for k, v in list(label_encoders.items()):
+    try:
+        # LabelEncoder has attribute classes_
+        if hasattr(v, 'classes_'):
+            mapping = {str(cls): int(i) for i, cls in enumerate(v.classes_)}
+            label_encoders[k] = mapping
+    except Exception:
+        pass
 
 print("Model loaded successfully!\n")
 
-def predict_stress(data_dict):
-    """
-    Predict stress level from input data
-    
-    Args:
-        data_dict: Dictionary with feature names and values
-    
-    Returns:
-        Predicted stress level (1-5)
-    """
-    # Create DataFrame from input
-    df = pd.DataFrame([data_dict])
-    
-    # Encode categorical variables
-    for col in df.columns:
+
+def _encode_and_order(data_dict):
+    x = []
+    for col in feature_columns:
+        val = data_dict.get(col, "")
         if col in label_encoders:
-            try:
-                df[col] = label_encoders[col].transform(df[col].astype(str))
-            except ValueError as e:
-                print(f"Warning: Unknown category in {col}")
-                df[col] = 0
-    
-    # Ensure correct column order
-    df = df[feature_columns]
-    
-    # Predict
-    prediction = model.predict(df)[0]
-    probability = model.predict_proba(df)[0]
-    
-    return prediction, probability
+            # map unknown categories to 0
+            x.append(float(label_encoders[col].get(str(val), 0)))
+        else:
+            x.append(float(val))
+    return np.array(x, dtype=float).reshape(1, -1)
+
+
+def predict_stress(data_dict):
+    """Predict stress level from input data (dict)-> (prediction, probabilities)
+
+    Returns prediction as original target value (e.g., 1-5) and probability vector.
+    """
+    X = _encode_and_order(data_dict)
+    probs = model.predict_proba(X)[0]
+    pred_idx = int(np.argmax(probs))
+    # Model saved targets are numeric (e.g., 1-5). We saved mapping in model_data->idx_to_target when using numpy trainer,
+    # but for scikit-learn we keep original target labels in the model. So attempt to infer original target:
+    idx_to_target = model_data.get('idx_to_target')
+    if idx_to_target is not None:
+        prediction = idx_to_target.get(pred_idx, pred_idx)
+    else:
+        # If no mapping, the classifier likely predicts original labels directly
+        try:
+            prediction = int(model.predict(X)[0])
+        except Exception:
+            prediction = int(pred_idx)
+    return int(prediction), probs
 
 # Example usage
 if __name__ == "__main__":
