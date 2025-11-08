@@ -2,13 +2,21 @@ import pandas as pd
 import numpy as np
 import pickle
 import warnings
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 warnings.filterwarnings('ignore')
+
+# Helper to identify numeric columns
+def get_numeric_columns(df):
+    return df.select_dtypes(include=['int64', 'float64']).columns
+
+# Helper to identify categorical columns
+def get_categorical_columns(df):
+    return df.select_dtypes(include=['object']).columns
 
 
 def is_float(s):
