@@ -74,7 +74,7 @@ def predict():
 
         result = {
             'prediction': prediction,
-            'confidence': round(confidence, 1),
+            
             'info': stress_info.get(prediction, {})
         }
 
