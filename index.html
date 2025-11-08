@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Stress Level Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .range-display {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.5s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stress-level {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .confidence {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .advice {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Student Stress Predictor</h1>
+            <p>AI-Powered Academic Stress Level Assessment</p>
+        </div>
+
+        <div class="form-container">
+            <form id="stressForm">
+                <div class="form-group">
+                    <label for="academic_stage">Academic Stage</label>
+                    <select id="academic_stage" name="academic_stage" required>
+                        <option value="">Select your stage</option>
+                        <option value="high school">High School</option>
+                        <option value="undergraduate">Undergraduate</option>
+                        <option value="post-graduate">Post Graduate</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="peer_pressure">Peer Pressure (1-5)</label>
+                    <input type="number" id="peer_pressure" name="peer_pressure" min="1" max="5" value="3" required>
+                    <div class="range-display" id="peer_display">3</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="home_pressure">Academic Pressure from Home (1-5)</label>
+                    <input type="number" id="home_pressure" name="home_pressure" min="1" max="5" value="3" required>
+                    <div class="range-display" id="home_display">3</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="study_env">Study Environment</label>
+                    <select id="study_env" name="study_env" required>
+                        <option value="">Select environment</option>
+                        <option value="Peaceful">Peaceful</option>
+                        <option value="Noisy">Noisy</option>
+                        <option value="disrupted">Disrupted</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="coping_strategy">Coping Strategy</label>
+                    <select id="coping_strategy" name="coping_strategy" required>
+                        <option value="">Select strategy</option>
+                        <option value="Analyze the situation and handle it with intellect">Intellectual Analysis</option>
+                        <option value="Social support (friends, family)">Social Support</option>
+                        <option value="Emotional breakdown (crying a lot)">Emotional Breakdown</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="bad_habits">Bad Habits (Smoking/Drinking)</label>
+                    <select id="bad_habits" name="bad_habits" required>
+                        <option value="">Select option</option>
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                        <option value="prefer not to say">Prefer not to say</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="competition">Academic Competition Level (1-5)</label>
+                    <input type="number" id="competition" name="competition" min="1" max="5" value="3" required>
+                    <div class="range-display" id="comp_display">3</div>
+                </div>
+
+                <button type="submit">Predict Stress Level</button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your data...</p>
+            </div>
+
+            <div class="result" id="result">
+                <h2>Your Stress Level</h2>
+                <div class="stress-level" id="stressLevel"></div>
+                <div class="confidence" id="confidence"></div>
+                <div class="advice" id="advice"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update range displays
+        document.getElementById('peer_pressure').addEventListener('input', function() {
+            document.getElementById('peer_display').textContent = this.value;
+        });
+
+        document.getElementById('home_pressure').addEventListener('input', function() {
+            document.getElementById('home_display').textContent = this.value;
+        });
+
+        document.getElementById('competition').addEventListener('input', function() {
+            document.getElementById('comp_display').textContent = this.value;
+        });
+
+        // Form submission
+        document.getElementById('stressForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            loading.style.display = 'block';
+            result.classList.remove('show');
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                document.getElementById('stressLevel').textContent = 
+                    `${data.prediction}/5 - ${data.info.level}`;
+                document.getElementById('stressLevel').style.color = data.info.color;
+                
+                document.getElementById('confidence').textContent = 
+                    `Confidence: ${data.confidence}%`;
+                
+                const adviceDiv = document.getElementById('advice');
+                adviceDiv.textContent = data.info.advice;
+                adviceDiv.style.borderLeftColor = data.info.color;
+                
+                result.classList.add('show');
+                result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                alert('Error making prediction. Please try again.');
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
