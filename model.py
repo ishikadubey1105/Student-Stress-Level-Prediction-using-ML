@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import pickle
 import warnings
@@ -54,13 +56,17 @@ print(f"\nTraining set: {X_train.shape[0]} samples")
 print(f"Test set: {X_test.shape[0]} samples")
 
 # Train model
-print("\nTraining Random Forest model...")
-model = RandomForestClassifier(
-    n_estimators=100,
-    max_depth=10,
-    random_state=42,
-    n_jobs=-1
-)
+print("\nTraining Logistic Regression model (with standard scaling)...")
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(
+        multi_class='multinomial',
+        solver='lbfgs',
+        max_iter=1000,
+        class_weight='balanced',
+        random_state=42
+    ))
+])
 model.fit(X_train, y_train)
 
 # Evaluate model
@@ -77,14 +83,24 @@ print(classification_report(y_test, y_pred))
 print("\nConfusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 
-# Feature importance
-feature_importance = pd.DataFrame({
-    'feature': feature_columns,
-    'importance': model.feature_importances_
-}).sort_values('importance', ascending=False)
-
-print("\nTop 5 Important Features:")
-print(feature_importance.head())
+# Feature importance (using absolute logistic coefficients)
+print("\nComputing feature importances from logistic coefficients...")
+try:
+    clf = model.named_steps['clf'] if isinstance(model, Pipeline) else model
+    coefs = np.abs(clf.coef_)
+    # For multiclass, take mean absolute coefficient across classes
+    if coefs.ndim == 2:
+        importances = coefs.mean(axis=0)
+    else:
+        importances = coefs
+    feature_importance = pd.DataFrame({
+        'feature': feature_columns,
+        'importance': importances
+    }).sort_values('importance', ascending=False)
+    print("\nTop 5 Important Features:")
+    print(feature_importance.head())
+except Exception as e:
+    print("Could not compute feature importances:", e)
 
 # Save everything needed for prediction
 model_data = {
